@@ -43,9 +43,9 @@ class AcademicController extends Controller
             ->get();
         $course->load([
             'academic',
-            'ratings.student.user',
             'modules.lessons',
-            'students.user'
+            'students.user',
+            'ratings' => fn($query) => $query->with('student.user')->limit(2),
         ]);
 
         // No longer relying on session('snapToken') from a redirect here
@@ -74,6 +74,7 @@ class AcademicController extends Controller
             'students.user',
             'modules.lessons.module.course',
         ]);
+
         $lesson->load([
             'module.lessons',
             'module.course',
@@ -81,7 +82,9 @@ class AcademicController extends Controller
                 $query->inRandomOrder()->limit(4);
             }
         ]);
+
         $user = Auth::user();
+
         $student = Student::where('user_id', '=', $user->id)
             ->with([
                 'user',

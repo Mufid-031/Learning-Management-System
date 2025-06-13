@@ -20,11 +20,19 @@ class Rating extends Model
 
     public function student(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Student::class, 'student_id');
+        return $this->belongsTo(
+            \App\Models\Student::class,
+            'student_id',
+            'id'
+        );
     }
 
     public function course(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Course::class);
+        return $this->belongsTo(
+            \App\Models\Course::class,
+            'course_id',
+            'id'
+        );
     }
 }

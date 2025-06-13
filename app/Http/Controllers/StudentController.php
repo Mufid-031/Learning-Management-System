@@ -85,9 +85,10 @@ class StudentController extends Controller
     {
         $courses = Course::all();
         $user->load([
-            'student.enrollments.ratings',
-            'student.enrollments.modules',
-            'student.enrollments.students'
+            'student.courseProgresses',
+            'student.courseProgresses.course.modules.lessons.quizzes',
+            'student.courseProgresses.course.students.user',
+            'student.courseProgresses.course.ratings.student',
         ]);
 
         return Inertia::render('student/profile', [
@@ -183,12 +184,12 @@ class StudentController extends Controller
             // Argumen kedua di sini adalah nilai tambahan untuk pembuatan record jika belum ada.
             // Contoh: ['issue_date' => now()] jika Anda punya kolom 'issue_date' di tabel certificates
         )
-        ->with([
-            'student.user',
-            'student.courseProgresses.course',
-            'course.academic',
-        ])
-        ->first();
+            ->with([
+                'student.user',
+                'student.courseProgresses.course',
+                'course.academic',
+            ])
+            ->first();
 
         return Inertia::render('student/certificate', [
             'certificate' => new CertificateResource($certificate),

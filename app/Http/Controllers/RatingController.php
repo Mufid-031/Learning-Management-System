@@ -24,9 +24,16 @@ class RatingController extends Controller
             ->whereHas('academic', fn($query) => $query->where('status', 'published'))
             ->get();
         $academics = Academic::with([
-            'courses.modules',
-            'courses.ratings.student.user'
+            'courses' => function ($query) {
+                $query->whereHas('ratings') // hanya courses yang punya ratings
+                    ->with([
+                        'modules',
+                        'ratings.student.user', // eager loading relasi nested ratings -> student -> user,
+                        'ratings.course'
+                    ]);
+            }
         ])->get();
+
 
         return Inertia::render('ratings', [
             'courses' => CourseResource::collection($courses),

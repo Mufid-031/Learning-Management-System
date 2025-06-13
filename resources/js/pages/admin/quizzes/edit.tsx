@@ -17,6 +17,7 @@ import { BreadcrumbItem, Quiz, SharedData } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/react';
 
 // Added Button and LoaderCircle for the submit button
+import { DeleteModal } from '@/components/delete-modal';
 import InputError from '@/components/input-error'; // Ensure InputError is imported if used
 import { Button } from '@/components/ui/button';
 import { LoaderCircle } from 'lucide-react';
@@ -91,11 +92,14 @@ export default function QuizzesEdit() {
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Create Quiz" />
       <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-        <div className="pl-4">
-          <h1 className="text-2xl font-bold">Create Quiz</h1>
-          <p className="text-muted-foreground text-sm">
-            Complete all fields ({requiredFieldsNumber}/6){' '}
-          </p>
+        <div className="flex items-center justify-between pl-4">
+          <div>
+            <h1 className="text-2xl font-bold">Edit Quiz</h1>
+            <p className="text-muted-foreground text-sm">
+              Complete all fields ({requiredFieldsNumber}/6){' '}
+            </p>
+          </div>
+          <DeleteModal resourceName="quizze" id={quiz.data.id} />
         </div>
         <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border md:min-h-min">
           <FormLayout onSubmit={handleSubmit}>

@@ -44,9 +44,7 @@ export function CourseDetail({
   const getInitials = useInitials();
   const { course } = usePage<SharedData & { course: { data: Course } }>().props;
   const [activeTab, setActiveTab] = useState<string>('description');
-  const courseFilteredRatings = course.data.ratings.filter(
-    (rating) => rating.rating == 5,
-  );
+  const courseRatings = course.data.ratings;
 
   return (
     <nav className="mt-10 px-5">
@@ -89,31 +87,26 @@ export function CourseDetail({
             <div
               className={cn(
                 'mt-10 grid grid-cols-1 gap-2 px-3',
-                courseFilteredRatings.length > 0 ? 'lg:grid-cols-2' : '',
+                courseRatings.length > 0 ? 'lg:grid-cols-2' : '',
               )}
             >
-              {courseFilteredRatings.length > 0 ? (
-                Array.from({ length: 2 }).map((_, i) => (
-                  <Card key={courseFilteredRatings[i].id} className="relative">
+              {courseRatings.length > 0 ? (
+                courseRatings.map((rating) => (
+                  <Card key={rating.id} className="relative">
                     <CardHeader>
                       <div className="flex gap-3">
                         <Avatar className="h-16 w-16">
                           <AvatarImage
-                            src={
-                              '/storage/' +
-                              courseFilteredRatings[i].student.user.avatar
-                            }
-                            alt={courseFilteredRatings[i].student.user.name}
+                            src={'/storage/' + rating.student.user.avatar}
+                            alt={rating.student.user.name}
                           />
                           <AvatarFallback>
-                            {getInitials(
-                              courseFilteredRatings[i].student.user.name,
-                            )}
+                            {getInitials(rating.student.user.name)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <CardTitle className="mt-2">
-                            {courseFilteredRatings[i].student.user.name}
+                            {rating.student.user.name}
                           </CardTitle>
                           <CardDescription className="mt-2">
                             <span className="text-muted-foreground flex gap-2">
@@ -122,9 +115,7 @@ export function CourseDetail({
                                   key={k}
                                   className="h-4 w-4 text-amber-400"
                                   fill={
-                                    k < courseFilteredRatings[i].rating
-                                      ? 'currentColor'
-                                      : 'none'
+                                    k < rating.rating ? 'currentColor' : 'none'
                                   }
                                 />
                               ))}
@@ -133,9 +124,7 @@ export function CourseDetail({
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      {courseFilteredRatings[i].comment}
-                    </CardContent>
+                    <CardContent>{rating.comment}</CardContent>
                     <ShineBorder
                       shineColor={['#A07CFE', '#FE8FB5', '#FFBE7B']}
                     />
@@ -144,7 +133,7 @@ export function CourseDetail({
               ) : (
                 <div className="flex h-96 items-center justify-center">
                   <p className="text-muted-foreground mt-2 text-center text-lg">
-                    Belum ada testimoni
+                    Belum ada testimoni untuk course ini
                   </p>
                 </div>
               )}

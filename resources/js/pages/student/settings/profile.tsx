@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import RootLayout from '@/layouts/root-layout';
+import { Image } from 'lucide-react';
 
 type ProfileForm = {
   avatar: File | null;
@@ -64,7 +65,7 @@ export default function Profile({
             />
             <Card>
               <CardContent>
-                <div className="space-y-6">
+                <div className="mb-4 space-y-6">
                   <HeadingSmall
                     title="Profile information"
                     description="Update your name and email address"
@@ -82,12 +83,16 @@ export default function Profile({
                                 alt={data.name}
                                 className="h-full w-full object-cover"
                               />
-                            ) : (
+                            ) : auth.user.avatar ? (
                               <img
                                 src={`/storage/${auth.user.avatar}`}
                                 alt={auth.user.name}
                                 className="h-full w-full object-cover"
                               />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <Image className="h-10 w-10" />
+                              </div>
                             )}
                           </div>
                         </div>

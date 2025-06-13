@@ -1,12 +1,13 @@
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Course, SharedData } from '@/types';
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { ArrowRightCircle } from 'lucide-react';
 import { RootContent } from './root-content';
 import { Animatedcards } from './ui/animated-cards';
 import { BlurFade } from './ui/blur-fade';
 import { Button } from './ui/button';
+import { Card } from './ui/card';
 import { Marquee } from './ui/marquee';
 
 const ourTeams = [
@@ -20,7 +21,7 @@ const ourTeams = [
   {
     quote:
       "Implementation was seamless and the results exceeded our expectations. The platform's flexibility is remarkable.",
-    name: 'Fuad',
+    name: 'Ahmad Syauqi Fuady',
     designation: 'Frontend Developer',
     src: '/fuad.jpg',
   },
@@ -29,7 +30,7 @@ const ourTeams = [
       "This solution has significantly improved our team's productivity. The intuitive interface makes complex tasks simple.",
     name: 'Maulana Ardiansyah',
     designation: 'Backend Developer',
-    src: 'https://images.unsplash.com/photo-1623582854588-d60de57fa33f?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    src: '/maulana.jpg',
   },
 ];
 
@@ -70,7 +71,7 @@ export function RootStandartGlobal() {
               inView
               className="flex items-center gap-2"
             >
-              Lihat semua kelas
+              <Link href="/learning-paths">Lihat semua kelas</Link>
               <ArrowRightCircle className="h-7 w-7 transition-all duration-150 group-hover:translate-x-1" />
             </BlurFade>
           </Button>
@@ -102,31 +103,27 @@ export function RootStandartGlobal() {
           </Marquee>
         </div>
       </section>
-      <div className="mt-10 text-center">
+      <div className="mt-10 px-5 text-center">
         <h2 className="mb-5 text-2xl font-bold">
           <BlurFade direction="up" duration={0.7} inView>
             Kenal lebih dekat dengan kami!
           </BlurFade>
         </h2>
-        <p className="text-muted-foreground mb-10">
-          <BlurFade
-            direction="up"
-            duration={0.7}
-            delay={0.5}
-            offset={20}
-            inView
-          >
+        <p className="text-muted-foreground mb-10 text-sm md:text-base">
+          <BlurFade direction="right" duration={0.7} delay={0.5} inView>
             Sebagai platform edukasi teknologi, pengembangan skill para
-            developer adalah fokus Dicoding. Untuk mencapainya, tersedia
-            berbagai kelas online, program pelatihan, dan sertifikasi
+            developer adalah fokus Dicoding. Untuk mencapainya,
+          </BlurFade>
+          <BlurFade direction="left" duration={0.7} delay={0.7} inView>
+            tersedia berbagai kelas online, program pelatihan, dan sertifikasi
             pemrograman dengan kualitas yang terjamin serta 2 layanan utama:
             Code Review & Forum Diskusi.
           </BlurFade>
         </p>
       </div>
-      <section className="bg-muted mx-10 mb-10 flex flex-col justify-between rounded-xl p-10">
+      <Card className="bg-muted mx-10 mb-10 flex flex-col justify-between rounded-xl p-10">
         <Animatedcards cards={ourTeams} autoplay />
-      </section>
+      </Card>
     </RootContent>
   );
 }
@@ -142,9 +139,11 @@ const ReviewCard = ({ course }: { course: Course }) => {
         'dark:border-gray-50/[.1] dark:bg-gray-50/[.10] dark:hover:bg-gray-50/[.15]',
       )}
     >
-      <div className="objcet-cover h-full w-full bg-cover bg-center">
-        <img src={`/storage/${course.image}`} alt="" />
-        <h3 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-md font-semibold w-full text-center">
+      <div className="objcet-cover relative h-40 w-full bg-cover bg-center">
+        <img src={`/storage/${course.image}`} alt={course.title} className="" />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+        <h3 className="text-md absolute top-1/2 left-1/2 w-full -translate-x-1/2 -translate-y-1/2 px-3 text-center font-semibold">
           {course.title}
         </h3>
       </div>

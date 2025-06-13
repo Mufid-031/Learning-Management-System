@@ -67,11 +67,7 @@ export interface User {
     id: number;
     user_id: number;
   };
-  student?: {
-    id: number;
-    courses_enrolled: Course[];
-    user_id: number;
-  };
+  student?: Student;
   [key: string]: unknown; // This allows for additional properties...
 }
 
@@ -146,10 +142,7 @@ export interface Rating {
   rating: number;
   comment: string;
   course: Course;
-  student: {
-    id: number;
-    user: User;
-  };
+  student: Student;
 }
 
 export type DataContextType = {

@@ -1,8 +1,7 @@
 import { useInitials } from '@/hooks/use-initials';
 import { Academic, SharedData } from '@/types';
-import { usePage } from '@inertiajs/react';
-import axios from 'axios';
-import { ArrowRight, StarIcon } from 'lucide-react';
+import { useForm, usePage } from '@inertiajs/react';
+import { ArrowRight, StarIcon, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
@@ -28,103 +27,135 @@ import { ShineBorder } from './ui/shine-border';
 export function RatingsSection({ academic }: { academic: Academic }) {
   const { auth } = usePage<SharedData>().props;
   const getInitials = useInitials();
-  const ratingsSliced = academic.courses.map((course) =>
-    course.ratings.find((rating) => rating.rating >= 4),
-  );
+  const { delete: destroy } = useForm({});
 
-  const handleDeleteRating = async (id: number) => {
-    try {
-      const response = await axios.delete(`/ratings/${id}`);
-      if (response.status === 200) {
-        toast.success('Rating deleted successfully!');
-      }
-    } catch (error) {
-      console.log(error);
-      toast.error('Failed to delete rating');
-    }
+  const ratingsSliced = academic.courses
+    .flatMap((course) => course.ratings)
+    .filter((rating) => rating.rating >= 4)
+    .slice(0, 6); // tampilkan max 6 testimoni
+
+  const handleDeleteRating = (id: number) => {
+    destroy(route('ratings.destroy', id), {
+      onSuccess: () => {
+        toast.success('Testimoni berhasil dihapus');
+      },
+      onError: (e) => {
+        toast.error('Gagal menghapus testimoni');
+        console.log(e);
+      },
+      preserveScroll: true,
+    });
   };
 
   return (
-    <div id={academic.title} className="grid gap-10 pt-32">
-      <h2 className="w-xl text-5xl">Testimoni {academic.title}</h2>
-      <div className="grid grid-cols-1 gap-x-5 gap-y-3 md:grid-cols-2 lg:grid-cols-3">
+    <div id={academic.title} className="grid gap-10 px-4 pt-32">
+      <h2 className="text-primary w-xl text-5xl font-bold">
+        {academic.title} Testimoni
+      </h2>
+
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Card className="overflow-hidden p-0">
+          <img
+            src={`/storage/${academic.image}`}
+            alt={academic.title}
+            className="h-full w-full object-cover"
+          />
+        </Card>
         {ratingsSliced.map((rating) => (
-          <Card key={rating?.id} className="relative">
-            <CardHeader>
-              <div className="flex gap-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage
-                    src={'/storage/' + rating?.student.user.avatar}
-                    alt={rating?.student.user.name}
-                    className="object-cover"
-                  />
-                  <AvatarFallback>
-                    {getInitials(rating!.student.user.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <CardTitle className="mt-2">
-                    {rating?.student.user.name}
-                  </CardTitle>
-                  <CardDescription className="mt-2">
-                    <span className="text-muted-foreground flex gap-2">
-                      {Array.from({ length: 5 }, (_, k) => (
-                        <StarIcon
-                          key={k}
-                          className="h-4 w-4 text-amber-400"
-                          fill={k < rating!.rating ? 'currentColor' : 'none'}
-                        />
-                      ))}
-                    </span>
-                  </CardDescription>
-                </div>
+          <Card
+            key={rating.id}
+            className="group relative border-none transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+          >
+            <ShineBorder shineColor={['#A07CFE', '#FE8FB5', '#FFBE7B']} />
+            <CardHeader className="flex flex-row items-center gap-4">
+              <Avatar className="ring-primary h-14 w-14 ring-2">
+                <AvatarImage
+                  src={`/storage/${rating.student.user.avatar}`}
+                  alt={rating?.student.user.name}
+                  className="object-cover"
+                />
+                <AvatarFallback>
+                  {getInitials(rating.student.user.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle>{rating.student.user.name}</CardTitle>
+                <CardDescription className="flex items-center gap-1 text-sm">
+                  {Array.from({ length: 5 }, (_, k) => (
+                    <StarIcon
+                      key={k}
+                      className="h-4 w-4 text-amber-400"
+                      fill={k < rating.rating ? 'currentColor' : 'none'}
+                    />
+                  ))}
+                </CardDescription>
               </div>
             </CardHeader>
-            <CardContent className="text-muted-foreground line-clamp-4 text-sm">
-              {rating?.comment}
+
+            <CardContent className="text-muted-foreground line-clamp-5 min-h-[120px] text-sm">
+              {rating.comment}
             </CardContent>
-            <CardFooter className="flex items-center justify-end">
+
+            <CardFooter className="flex items-center justify-between">
+              <div className="text-primary text-xs font-medium">
+                {rating.course.title}
+              </div>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="link" className="group cursor-pointer">
-                    Baca Selengkapnya
-                    <ArrowRight className="transition-all duration-100 group-hover:translate-x-1" />
+                  <Button variant="link" size="sm" className="group">
+                    Lihat
+                    <ArrowRight className="ml-1 transition group-hover:translate-x-1" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-16 w-16">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="ring-primary h-16 w-16 ring-2">
                           <AvatarImage
-                            src={'/storage/' + rating?.student.user.avatar}
-                            alt={rating?.student.user.name}
+                            src={`/storage/${rating.student.user.avatar}`}
+                            alt={rating.student.user.name}
                           />
                           <AvatarFallback>
-                            {getInitials(rating!.student.user.name)}
+                            {getInitials(rating.student.user.name)}
                           </AvatarFallback>
                         </Avatar>
-                        <h3>{rating?.student.user.name}</h3>
+                        <div>
+                          <h3 className="text-lg font-semibold">
+                            {rating.student.user.name}
+                          </h3>
+                          <p className="text-muted-foreground text-sm">
+                            {rating.course.title}
+                          </p>
+                        </div>
                       </div>
                     </DialogTitle>
-                    <DialogDescription>{rating?.comment}</DialogDescription>
+                    <DialogDescription className="mt-4 text-base">
+                      {rating.comment}
+                    </DialogDescription>
                   </DialogHeader>
-                  {auth.user.role === 'admin' && (
+                  {auth.user && auth.user.role === 'admin' && (
                     <DialogFooter>
                       <Button
                         variant="destructive"
-                        onClick={() => handleDeleteRating(rating!.id)}
+                        onClick={() => handleDeleteRating(rating.id)}
                       >
-                        Hapus
+                        <Trash2 className="mr-2 h-4 w-4" /> Hapus
                       </Button>
                     </DialogFooter>
                   )}
                 </DialogContent>
               </Dialog>
             </CardFooter>
-            <ShineBorder shineColor={['#A07CFE', '#FE8FB5', '#FFBE7B']} />
           </Card>
         ))}
+
+        {/* Jika belum ada testimoni */}
+        {ratingsSliced.length === 0 && (
+          <div className="text-muted-foreground flex items-center justify-center text-center text-lg">
+            Belum ada testimoni untuk {academic.title}
+          </div>
+        )}
       </div>
     </div>
   );

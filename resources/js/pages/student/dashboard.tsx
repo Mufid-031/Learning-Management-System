@@ -91,7 +91,7 @@ export default function StudentDashboard() {
                   profesional.
                 </p>
                 <Button className="cursor-pointer">
-                  <Link href="/student/courses">Ambil Course Sekarang</Link>
+                  <Link href="/learning-paths">Ambil Course Sekarang</Link>
                 </Button>
               </div>
             ) : (

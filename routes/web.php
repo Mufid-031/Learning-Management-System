@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Resources\RatingResource;
+use App\Models\Rating;
 use Inertia\Inertia;
 use App\Models\Course;
 use App\Models\Academic;
@@ -30,12 +32,17 @@ Route::get('/', function () {
                 'lessons' => fn($query) => $query->where('status', 'published')
             ])
         ]),
-        'courses.students'
+        'courses.students',
     ])->get();
+
     $courses = Course::where('status', 'published')->get();
+
+    $ratings = Rating::with(['student.user', 'course'])->inRandomOrder()->get();
+
     return Inertia::render('welcome', [
         'academics' => AcademicResource::collection($academics),
         'courses' => CourseResource::collection($courses),
+        'ratings' => RatingResource::collection($ratings),
     ]);
 })->name('home');
 

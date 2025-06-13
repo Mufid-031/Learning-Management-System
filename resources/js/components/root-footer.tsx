@@ -65,7 +65,7 @@ export function RootFooter() {
                   variant="link"
                   className="text-muted-foreground cursor-pointer"
                 >
-                  Fuad
+                  Syauqi Fuadi
                 </Button>
               </li>
             </ul>

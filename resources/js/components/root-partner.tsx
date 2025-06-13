@@ -1,125 +1,100 @@
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import {
+  FaApple,
+  FaAws,
+  FaFacebook,
+  FaGoogle,
+  FaMicrosoft,
+  FaTwitter,
+} from 'react-icons/fa';
+import { SiHuawei, SiLenovo, SiSamsung } from 'react-icons/si';
 import { BlurFade } from './ui/blur-fade';
 import { Marquee } from './ui/marquee';
 
+// Partner utama
 const partnerList = [
-  'google.png',
-  'microsoft.png',
-  'aws.png',
-  'ibm.png',
-  'indosat.png',
-  'kemenparekraf.png',
-  'lintasarta.png',
-  'line.png',
-  'alcatel.png',
-  'samsung.png',
-  'ericsson.png',
-  'dbsf.png',
-  'lenovo.png',
-  'intel.png',
-  'xl.png',
-  'kemkominfo.png',
-  'kampus-merdeka.png',
-  'bangkit.png',
+  { id: 'google', icon: FaGoogle },
+  { id: 'microsoft', icon: FaMicrosoft },
+  { id: 'aws', icon: FaAws },
+  { id: 'lenovo', icon: SiLenovo },
+];
+
+// Partner tambahan
+const additionalPartnerList = [
+  { id: 'apple', icon: FaApple },
+  { id: 'facebook', icon: FaFacebook },
+  { id: 'twitter', icon: FaTwitter },
+  { id: 'samsung', icon: SiSamsung },
+  { id: 'huawei', icon: SiHuawei },
 ];
 
 export function RootPartner() {
   const isMobile = useIsMobile();
 
+  // Responsive config
+  const iconSize = isMobile ? 30 : 50;
+  const gapSize = isMobile ? 'gap-10' : 'gap-20';
+  const repeatCount = isMobile ? 3 : 5;
+
   return (
-    <section className="mb-10 flex flex-col gap-5">
+    <section className="mb-20 flex flex-col gap-5">
       <h3 className="text-center text-xl font-semibold">
         <BlurFade direction="up" duration={0.7} inView>
           Telah dipercaya oleh
         </BlurFade>
       </h3>
+
       {!isMobile && (
-        <div className="flex flex-col gap-7">
-          <div className="flex items-center justify-center gap-7">
-            {Array.from(partnerList.slice(0, 6)).map((partner, index) => (
-              <BlurFade
-                direction="up"
-                duration={0.7}
-                delay={index * 0.1}
-                inView
-                key={index}
-                className="bg-accent-foreground flex h-20 w-48 items-center justify-center rounded-xl"
-              >
-                <img className="w-36" src={`/${partner}`} alt="partner" />
-              </BlurFade>
-            ))}
-          </div>
-          <div className="flex items-center justify-center gap-7">
-            {Array.from(partnerList.slice(6, 12)).map((partner, index) => (
-              <BlurFade
-                direction="up"
-                duration={0.7}
-                delay={index * 0.1}
-                inView
-                key={index}
-                className="bg-accent-foreground flex h-20 w-48 items-center justify-center rounded-xl"
-              >
-                <img className="w-36" src={`/${partner}`} alt="partner" />
-              </BlurFade>
-            ))}
-          </div>
-          <div className="flex items-center justify-center gap-7">
-            {Array.from(partnerList.slice(12, 18)).map((partner, index) => (
-              <BlurFade
-                direction="up"
-                duration={0.7}
-                delay={index * 0.1}
-                inView
-                key={index}
-                className="bg-accent-foreground flex h-20 w-48 items-center justify-center rounded-xl"
-              >
-                <img className="w-36" src={`/${partner}`} alt="partner" />
-              </BlurFade>
-            ))}
-          </div>
-        </div>
-      )}
-      {isMobile && (
-        <div
-          className={cn(
-            'relative flex h-full w-full items-center justify-center overflow-hidden',
-            isMobile ? 'flex-col' : 'flex-row',
-          )}
-        >
+        <>
           <Marquee
+            vertical={isMobile}
+            repeat={repeatCount}
+            className={gapSize}
             pauseOnHover
-            vertical={isMobile ? false : true}
-            className="[--duration:20s]"
           >
-            {Array.from(partnerList.slice(0, 13)).map((partner, index) => (
-              <BlurFade
-                direction="up"
-                duration={0.7}
-                delay={index * 0.1}
-                inView
-                key={index}
-                className="bg-accent-foreground flex h-20 w-48 items-center justify-center rounded-xl"
-              >
-                <img className="w-36" src={`/${partner}`} alt="partner" />
-              </BlurFade>
-            ))}
+            <div className={`flex ${gapSize}`}>
+              {partnerList.map(({ id, icon: Icon }) => (
+                <div
+                  key={id}
+                  className={cn('flex items-center justify-center')}
+                >
+                  <Icon size={iconSize} />
+                </div>
+              ))}
+            </div>
           </Marquee>
+
           <Marquee
+            vertical={isMobile}
+            repeat={repeatCount}
+            className={gapSize}
+            pauseOnHover
             reverse
-            pauseOnHover
-            vertical={isMobile ? false : true}
-            className="[--duration:20s]"
           >
-            {Array.from(partnerList.slice(4, 18)).map((partner, index) => (
-              <div
-                key={index}
-                className="bg-accent-foreground flex h-20 w-48 items-center justify-center rounded-xl"
-              >
-                <img className="w-36" src={`/${partner}`} alt="partner" />
-              </div>
-            ))}
+            <div className={`flex ${gapSize}`}>
+              {additionalPartnerList.map(({ id, icon: Icon }) => (
+                <div
+                  key={id}
+                  className={cn('flex items-center justify-center')}
+                >
+                  <Icon size={iconSize} />
+                </div>
+              ))}
+            </div>
           </Marquee>
+        </>
+      )}
+
+      {isMobile && (
+        <div className="flex flex-wrap items-center justify-center gap-8 px-3">
+          {[...partnerList, ...additionalPartnerList].map(
+            ({ id, icon: Icon }) => (
+              <div key={id} className="flex items-center justify-center">
+                <Icon size={iconSize} />
+              </div>
+            ),
+          )}
         </div>
       )}
     </section>

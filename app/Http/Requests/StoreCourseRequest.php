@@ -23,7 +23,7 @@ class StoreCourseRequest extends FormRequest
     {
         return [
             'title' => 'required|string',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5000',
             'information' => 'required|string',
             'description' => 'required|string',
             'order' => 'required|integer',

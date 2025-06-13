@@ -21,11 +21,13 @@ import { ShineBorder } from '@/components/ui/shine-border';
 import { useAverage } from '@/hooks/use-average';
 import { useInitials } from '@/hooks/use-initials';
 import RootLayout from '@/layouts/root-layout';
-import { Course, SharedData, User } from '@/types'; // Asumsi tipe data Anda
+import { CourseProgress, SharedData, User } from '@/types'; // Asumsi tipe data Anda
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
   Book,
-  Briefcase, ChartColumnDecreasingIcon, // Mengganti ChartColumnDecreasing dengan ikon yang mungkin lebih relevan untuk 'difficulty' atau 'level'
+  BookOpen,
+  Briefcase,
+  ChartColumnDecreasingIcon, // Mengganti ChartColumnDecreasing dengan ikon yang mungkin lebih relevan untuk 'difficulty' atau 'level'
   CheckCircle2Icon,
   Edit2Icon,
   ExternalLink,
@@ -41,14 +43,15 @@ export default function Profile() {
   const { user } = usePage<SharedData & { user: { data: User } }>().props;
   const getInitials = useInitials();
   const getAverage = useAverage();
-  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
+  const [filteredCourses, setFilteredCourses] = useState<CourseProgress[]>([]);
 
-  const handleFilterChange = (selectValue: string | number) => {
+  const handleFilterChange = (selectValue: string) => {
     if (selectValue === 'all') {
-      setFilteredCourses(user.data.student?.courses_enrolled || []);
+      setFilteredCourses(user.data.student?.course_progresses || []);
     } else {
-      const filtered = user.data.student?.courses_enrolled.filter(
-        (course: Course) => course.is_completed == selectValue,
+      const filtered = user.data.student?.course_progresses.filter(
+        (progress) =>
+          progress.is_completed == (selectValue == 'true' ? true : false),
       );
       setFilteredCourses(filtered || []);
     }
@@ -65,8 +68,8 @@ export default function Profile() {
   };
 
   useEffect(() => {
-    setFilteredCourses(user.data.student?.courses_enrolled || []);
-  }, [user.data.student?.courses_enrolled]);
+    setFilteredCourses(user.data.student?.course_progresses || []);
+  }, [user.data.student?.course_progresses]);
 
   return (
     <RootLayout>
@@ -74,7 +77,7 @@ export default function Profile() {
 
       {/* Bagian Header Profil */}
       {/* Saran: Pertimbangkan untuk memberi background atau border pada section ini agar lebih menonjol */}
-      <div className="relative w-full py-32 px-10">
+      <div className="relative w-full px-10 py-32">
         <BackgroundBeams /> {/* Penyesuaian padding dan background lembut */}
         <RootContent>
           <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-end md:text-left">
@@ -126,7 +129,7 @@ export default function Profile() {
 
       {/* Bagian Konten Utama - Daftar Kursus */}
       <RootContent>
-        <div className="my-10 md:my-16 px-10">
+        <div className="my-10 px-10 md:my-16">
           {' '}
           {/* Konsistensi margin */}
           <div className="mb-4 flex items-center justify-between">
@@ -140,8 +143,8 @@ export default function Profile() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua</SelectItem>
-                  <SelectItem value="1">Selesai</SelectItem>
-                  <SelectItem value="0">Berlangsung</SelectItem>
+                  <SelectItem value="true">Kursus diselesaikan</SelectItem>
+                  <SelectItem value="false">Kursus berlangsung</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -150,9 +153,9 @@ export default function Profile() {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {' '}
               {/* Menambah opsi grid untuk layar lebih besar */}
-              {filteredCourses.map((course) => (
+              {filteredCourses.map((progress) => (
                 <Card
-                  key={course.id}
+                  key={progress.id}
                   className="relative flex flex-col overflow-hidden transition-shadow hover:shadow-lg dark:border-slate-700"
                 >
                   {' '}
@@ -165,8 +168,8 @@ export default function Profile() {
                       <div className="bg-muted relative h-24 w-28 flex-shrink-0 overflow-hidden rounded-md">
                         <img
                           className="h-full w-full object-cover"
-                          src={`/storage/${course.image}`} // Pastikan path `/storage/` sudah benar
-                          alt={course.title}
+                          src={`/storage/${progress.course.image}`} // Pastikan path `/storage/` sudah benar
+                          alt={progress.course.title}
                           onError={(e) =>
                             (e.currentTarget.style.display = 'none')
                           } // Sembunyikan jika gambar error, bg-muted akan terlihat
@@ -178,20 +181,20 @@ export default function Profile() {
                         {/* Mengurangi gap */}
                         <span
                           className={`mb-1 inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
-                            course.is_completed
+                            progress.is_completed
                               ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                               : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                           }`}
                         >
-                          {course.is_completed ? (
+                          {progress.is_completed ? (
                             <CheckCircle2Icon size={14} />
                           ) : (
                             <XIcon size={14} />
                           )}
-                          {course.is_completed ? 'Selesai' : 'Belum Selesai'}
+                          {progress.is_completed ? 'Selesai' : 'Belum Selesai'}
                         </span>
                         <CardTitle className="line-clamp-2 text-lg font-semibold">
-                          {course.title}
+                          {progress.course.title}
                         </CardTitle>{' '}
                         {/* Ukuran font disesuaikan dan line-clamp untuk judul panjang */}
                       </div>
@@ -203,7 +206,7 @@ export default function Profile() {
                         {/* Flex-wrap untuk responsivitas */}
                         <span className="flex items-center gap-1.5">
                           <TimerIcon size={14} className="text-blue-500" />
-                          {course.duration} Jam
+                          {progress.course.duration} Jam
                         </span>
                         <span className="flex items-center gap-1.5">
                           <StarIcon
@@ -211,17 +214,22 @@ export default function Profile() {
                             className="text-amber-500"
                             fill="currentColor"
                           />
-                          {course.ratings.length > 0
+                          {progress.course.ratings.length > 0
                             ? getAverage(
-                                course.ratings.map((rating) => rating.rating),
+                                progress.course.ratings.map(
+                                  (rating) => rating.rating,
+                                ),
                               ).toFixed(1)
                             : 0}{' '}
                           {/* Format rating menjadi 1 angka desimal */}
                         </span>
                         <span className="flex items-center gap-1.5 capitalize">
-                          <ChartColumnDecreasingIcon size={14} className="text-purple-500" />{' '}
+                          <ChartColumnDecreasingIcon
+                            size={14}
+                            className="text-purple-500"
+                          />{' '}
                           {/* Mengganti ikon */}
-                          {course.difficulty}
+                          {progress.course.difficulty}
                         </span>
                       </div>
                     </CardDescription>
@@ -232,21 +240,30 @@ export default function Profile() {
                     <p className="text-muted-foreground line-clamp-3 text-sm">
                       {' '}
                       {/* Batasi informasi kursus agar tinggi card konsisten */}
-                      {course.information || 'Informasi kursus tidak tersedia.'}
+                      {progress.course.information ||
+                        'Informasi kursus tidak tersedia.'}
                     </p>
                   </CardContent>
                   <CardFooter className="border-t pt-4 dark:border-slate-700">
                     {' '}
                     {/* Menambah border atas pada footer */}
                     <div className="text-muted-foreground flex w-full flex-col gap-3 text-xs">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
                         <span className="flex items-center gap-1.5">
                           <Book size={14} className="text-cyan-500" />
-                          {course.modules.length} Modul
+                          {progress.course.modules.length} Modul
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <BookOpen size={14} className="text-purple-500" />
+                          {progress.course.modules.reduce(
+                            (acc, module) => acc + module.lessons.length,
+                            0,
+                          )}{' '}
+                          Lessons
                         </span>
                         <span className="flex items-center gap-1.5">
                           <Users2 size={14} className="text-orange-500" />
-                          {course.students.length} Siswa
+                          {progress.course.students.length} Siswa
                         </span>
                       </div>
                       {/* Saran: Tombol untuk melihat detail kursus */}
@@ -256,7 +273,7 @@ export default function Profile() {
                         asChild
                         className="mt-2 w-full"
                       >
-                        <Link href={`/academies/${course.id}`}>
+                        <Link href={`/academies/${progress.course.id}`}>
                           {' '}
                           {/* Asumsi Anda punya halaman detail kursus dengan slug */}
                           Lihat Kursus
