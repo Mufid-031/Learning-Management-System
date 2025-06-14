@@ -16,7 +16,7 @@ export default function RootSidebarLayout({
   activeLesson,
   setActiveLesson,
 }: RootSidebarLayoutProps) {
-  const { course, lesson } = usePage<
+  const { course } = usePage<
     SharedData & { course: { data: Course }; lesson: { data: Lesson } }
   >().props;
 
@@ -24,14 +24,6 @@ export default function RootSidebarLayout({
     {
       title: course.data.title,
       href: `/academies/${course.data.id}`,
-    },
-    {
-      title: lesson.data.module.title,
-      href: `/academies/${course.data.id}/tutorials/${lesson.data.module.lessons[0].id}`,
-    },
-    {
-      title: lesson.data.title,
-      href: `/courses/${course.data.id}/lessons/${lesson.data.id}`,
     },
   ];
 

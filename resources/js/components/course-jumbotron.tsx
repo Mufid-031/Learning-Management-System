@@ -1,13 +1,16 @@
+import type React from 'react';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useAverage } from '@/hooks/use-average';
 import { currency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
-import { Course, SharedData } from '@/types';
+import type { Course, SharedData } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import axios from 'axios';
+import { motion, useInView } from 'framer-motion';
 import {
   Book,
-  ChartColumn,
+  BarChartIcon as ChartColumn,
   CircleCheckBig,
   CircleDollarSign,
   GitCommitHorizontal,
@@ -15,6 +18,7 @@ import {
   TimerIcon,
   Users2,
 } from 'lucide-react';
+import { useRef } from 'react';
 import { toast } from 'sonner';
 import { CourseOptionCard } from './course-option-card';
 import { RootContent } from './root-content';
@@ -55,6 +59,86 @@ declare global {
   }
 }
 
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+      damping: 12,
+    },
+  },
+};
+
+const imageVariants = {
+  hidden: { opacity: 0, scale: 0.8, rotateY: -15 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    rotateY: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+      damping: 15,
+      duration: 0.8,
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, x: 50 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 80,
+      damping: 15,
+    },
+  },
+};
+
+const buttonVariants = {
+  idle: { scale: 1 },
+  hover: {
+    scale: 1.05,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 10,
+    },
+  },
+  tap: { scale: 0.95 },
+};
+
+const badgeVariants = {
+  hidden: { opacity: 0, scale: 0 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 200,
+      damping: 15,
+      delay: 0.3,
+    },
+  },
+};
+
 export function CourseJumbotron({
   informationRef,
   syllabusRef,
@@ -63,8 +147,9 @@ export function CourseJumbotron({
   syllabusRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const { course } = usePage<SharedData & { course: { data: Course } }>().props;
-  //   console.log(course.data);
   const getAverage = useAverage();
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-100px' });
 
   const handleCheckPayment = async () => {
     if (course.data.price <= 0) {
@@ -83,20 +168,17 @@ export function CourseJumbotron({
 
     try {
       const response = await axios.post(
-        `/academies/course/${course.data.id}/payments`, // Corrected path to match route definition
+        `/academies/course/${course.data.id}/payments`,
       );
 
       console.log(response);
 
       if (response.data.snapToken) {
-        // If snapToken is received, open Midtrans Snap popup
         if (window.snap) {
           window.snap.pay(response.data.snapToken, {
-            onSuccess: async function (result: any) {
+            onSuccess: async (result: any) => {
               toast.success('Payment successful!');
               console.log('Payment Success:', result);
-              // After success, you might want to redirect the user
-              // to the first lesson or a confirmation page.
               await axios.post(
                 `/academies/course/${course.data.id}/confirm-payment`,
               );
@@ -105,15 +187,15 @@ export function CourseJumbotron({
                 `/academies/${course.data.id}/tutorials/${course.data.modules[0].lessons[0].id}`,
               );
             },
-            onPending: function (result: any) {
+            onPending: (result: any) => {
               toast.success('Payment pending. Please complete your payment.');
               console.log('Payment Pending:', result);
             },
-            onError: function (result: any) {
+            onError: (result: any) => {
               toast.error('Payment failed. Please try again.');
               console.log('Payment Error:', result);
             },
-            onClose: function () {
+            onClose: () => {
               toast.info('Payment popup closed. You can try again.');
               console.log('Payment Popup Closed.');
             },
@@ -125,7 +207,6 @@ export function CourseJumbotron({
           );
         }
       } else if (response.data.redirectUrl) {
-        // If redirectUrl is received (e.g., already paid), navigate using Inertia
         router.visit(response.data.redirectUrl);
         if (response.data.message) {
           toast.success(response.data.message);
@@ -148,35 +229,69 @@ export function CourseJumbotron({
   };
 
   return (
-    <section className="overflow-hidden p-5 pt-32">
+    <section className="overflow-hidden p-5 pt-32" ref={ref}>
       <RootContent>
-        <div className="flex flex-col gap-5 lg:flex-row">
-          <div className="bg-muted h-52 w-full lg:w-1/4">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate={isInView ? 'visible' : 'hidden'}
+          className="flex flex-col gap-5 lg:flex-row"
+        >
+          {/* Course Image */}
+          <motion.div
+            variants={imageVariants}
+            whileHover={{
+              scale: 1.02,
+              rotateY: 2,
+              transition: { duration: 0.3 },
+            }}
+            className="bg-muted h-52 w-full overflow-hidden rounded-lg shadow-lg lg:w-1/4"
+          >
             <img
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
               src={`/storage/${course.data.image}`}
               alt={course.data.title}
             />
-          </div>
-          <div className="w-full lg:w-2/4">
-            <Card className="border-none">
+          </motion.div>
+
+          {/* Course Information */}
+          <motion.div variants={itemVariants} className="w-full lg:w-2/4">
+            <Card className="border-none shadow-none">
               <CardHeader>
-                <span className="mb-4 flex items-center gap-1 text-sm font-semibold">
-                  <StarIcon
-                    className="w-6 text-yellow-300"
-                    fill="currentColor"
-                  />
-                  {course.data.ratings.length > 0
-                    ? getAverage(
-                        course.data.ratings.map((rating) => rating.rating),
-                      )
-                    : 0}
+                <motion.span
+                  variants={itemVariants}
+                  className="mb-4 flex items-center gap-1 text-sm font-semibold"
+                >
+                  <motion.div
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <StarIcon
+                      className="w-6 text-yellow-300"
+                      fill="currentColor"
+                    />
+                  </motion.div>
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5, type: 'spring' }}
+                  >
+                    {course.data.ratings.length > 0
+                      ? getAverage(
+                          course.data.ratings.map((rating) => rating.rating),
+                        )
+                      : 0}
+                  </motion.span>
                   <GitCommitHorizontal />
                   <Dialog>
                     <DialogTrigger>
-                      <p className="cursor-pointer underline">
+                      <motion.h1
+                        className="cursor-pointer underline"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
                         {course.data.academic.title.split(' ')[0]}
-                      </p>
+                      </motion.h1>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[700px]">
                       <DialogHeader>
@@ -191,13 +306,32 @@ export function CourseJumbotron({
                     </DialogContent>
                   </Dialog>
                   Learning Path
-                </span>
-                <h1 className="text-2xl font-bold">{course.data.title}</h1>
+                </motion.span>
+
+                <motion.h1
+                  variants={itemVariants}
+                  className="text-2xl font-bold"
+                >
+                  {course.data.title}
+                </motion.h1>
               </CardHeader>
+
               <CardContent className="flex flex-col gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <ChartColumn className="w-4 text-violet-500" />
+                <motion.div
+                  variants={containerVariants}
+                  className="flex items-center gap-4"
+                >
+                  <motion.div
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.05 }}
+                    className="flex items-center gap-2"
+                  >
+                    <motion.div
+                      whileHover={{ rotate: 180 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <ChartColumn className="w-4 text-violet-500" />
+                    </motion.div>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger className="text-muted-foreground cursor-pointer text-sm underline">
@@ -211,96 +345,201 @@ export function CourseJumbotron({
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                  </div>
-                  <div className="flex items-center gap-2">
+                  </motion.div>
+
+                  <motion.div
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.05 }}
+                    className="flex items-center gap-2"
+                  >
                     <TimerIcon className="w-4 text-blue-500" />
                     <span className="text-muted-foreground text-sm">
                       {course.data.duration} Jam Belajar
                     </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-2 capitalize">
-                      {course.data.price > 0 ? (
-                        <CircleDollarSign className="h-4 w-4 text-green-400" />
-                      ) : (
-                        <CircleCheckBig className="h-4 w-4 text-cyan-400" />
-                      )}
-                      <Badge
-                        variant="secondary"
-                        className={cn(
-                          course.data.price > 0
-                            ? 'text-green-400'
-                            : 'text-cyan-400',
-                        )}
+                  </motion.div>
+                </motion.div>
+
+                <motion.div
+                  variants={containerVariants}
+                  className="flex items-center gap-2"
+                >
+                  <motion.div
+                    variants={itemVariants}
+                    className="flex items-center gap-2"
+                  >
+                    <motion.span
+                      variants={badgeVariants}
+                      className="flex items-center gap-2 capitalize"
+                    >
+                      <motion.div
+                        whileHover={{ scale: 1.2, rotate: 360 }}
+                        transition={{ duration: 0.3 }}
                       >
-                        {course.data.price > 0
-                          ? currency(course.data.price)
-                          : 'Gratis'}
-                      </Badge>
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Book className="w-4 text-blue-400" />
+                        {course.data.price > 0 ? (
+                          <CircleDollarSign className="h-4 w-4 text-green-400" />
+                        ) : (
+                          <CircleCheckBig className="h-4 w-4 text-cyan-400" />
+                        )}
+                      </motion.div>
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            course.data.price > 0
+                              ? 'text-green-400'
+                              : 'text-cyan-400',
+                          )}
+                        >
+                          {course.data.price > 0
+                            ? currency(course.data.price)
+                            : 'Gratis'}
+                        </Badge>
+                      </motion.div>
+                    </motion.span>
+                  </motion.div>
+
+                  <motion.div
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.05 }}
+                    className="flex items-center gap-2"
+                  >
+                    <motion.div
+                      whileHover={{ rotateY: 180 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <Book className="w-4 text-blue-400" />
+                    </motion.div>
                     <span className="text-muted-foreground text-sm">
                       {course.data.modules.length} Modul
                     </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users2 className="w-4 text-yellow-400" />
+                  </motion.div>
+
+                  <motion.div
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.05 }}
+                    className="flex items-center gap-2"
+                  >
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{
+                        duration: 2,
+                        repeat: Number.POSITIVE_INFINITY,
+                      }}
+                    >
+                      <Users2 className="w-4 text-yellow-400" />
+                    </motion.div>
                     <span className="text-muted-foreground text-sm">
                       {course.data.students.length} Siswa Terdaftar
                     </span>
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               </CardContent>
+
               <CardFooter>
-                <p className="text-muted-foreground">
+                <motion.p
+                  variants={itemVariants}
+                  className="text-muted-foreground leading-relaxed"
+                >
                   {course.data.information}
-                </p>
+                </motion.p>
               </CardFooter>
             </Card>
-          </div>
-          <div className="w-full lg:w-1/4">
-            <Card className="relative">
-              <CardHeader>
-                <Button onClick={handleCheckPayment}>Belajar Sekarang</Button>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-3">
-                  <Button
-                    className="cursor-pointer"
-                    variant="secondary"
-                    onClick={() =>
-                      informationRef.current?.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start',
-                      })
-                    }
+          </motion.div>
+
+          {/* Action Card */}
+          <motion.div variants={cardVariants} className="w-full lg:w-1/4">
+            <motion.div
+              whileHover={{ y: -5 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+            >
+              <Card className="relative overflow-hidden">
+                <CardHeader>
+                  <motion.div
+                    variants={buttonVariants}
+                    initial="idle"
+                    whileHover="hover"
+                    whileTap="tap"
                   >
-                    Informasi kelas
-                  </Button>
-                  <Button
-                    className="cursor-pointer"
-                    variant="secondary"
-                    onClick={() =>
-                      syllabusRef.current?.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start',
-                      })
-                    }
+                    <Button
+                      onClick={handleCheckPayment}
+                      className="w-full cursor-pointer"
+                    >
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.8 }}
+                      >
+                        Belajar Sekarang
+                      </motion.span>
+                    </Button>
+                  </motion.div>
+                </CardHeader>
+                <CardContent>
+                  <motion.div
+                    variants={containerVariants}
+                    className="flex flex-col gap-3"
                   >
-                    Lihat silabus
-                  </Button>
-                </div>
-              </CardContent>
-              <BorderBeam size={70} />
-            </Card>
-          </div>
-        </div>
+                    <motion.div
+                      variants={itemVariants}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Button
+                        className="w-full cursor-pointer"
+                        variant="secondary"
+                        onClick={() =>
+                          informationRef.current?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start',
+                          })
+                        }
+                      >
+                        Informasi kelas
+                      </Button>
+                    </motion.div>
+                    <motion.div
+                      variants={itemVariants}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Button
+                        className="w-full cursor-pointer"
+                        variant="secondary"
+                        onClick={() =>
+                          syllabusRef.current?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start',
+                          })
+                        }
+                      >
+                        Lihat silabus
+                      </Button>
+                    </motion.div>
+                  </motion.div>
+                </CardContent>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1 }}
+                >
+                  <BorderBeam size={70} />
+                </motion.div>
+              </Card>
+            </motion.div>
+          </motion.div>
+        </motion.div>
       </RootContent>
-      <Separator className="mt-20" />
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ delay: 1.2, duration: 0.8 }}
+        style={{ originX: 0 }}
+      >
+        <Separator className="mt-20" />
+      </motion.div>
     </section>
   );
 }

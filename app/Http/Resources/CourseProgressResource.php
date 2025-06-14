@@ -24,7 +24,9 @@ class CourseProgressResource extends JsonResource
             'total_quizzes' => $this->total_quizzes,
             'progress_percentage' => $this->progress_percentage,
             'is_completed' => $this->is_completed,
-            'completed_at' => $this->completed_at
+            'completed_at' => $this->completed_at,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at
         ];
     }
 }

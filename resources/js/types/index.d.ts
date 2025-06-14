@@ -224,6 +224,8 @@ export interface CourseProgress {
   progress_percentage: number;
   is_completed: boolean;
   completed_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface Certificate {

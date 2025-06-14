@@ -22,6 +22,7 @@ use App\Models\CourseEnrollment;
 use App\Models\LessonCompletion;
 use App\Models\Module;
 use Illuminate\Support\Facades\DB;
+use Throwable; // Import Throwable for broader exception catching
 
 class AcademicController extends Controller
 {
@@ -49,8 +50,6 @@ class AcademicController extends Controller
             'ratings' => fn($query) => $query->with('student.user')->limit(2),
         ]);
 
-        // No longer relying on session('snapToken') from a redirect here
-        // The snapToken will now be handled directly by the client-side axios call.
         return Inertia::render('academics/course', [
             'courses' => CourseResource::collection($courses),
             'course' => new CourseResource($course),
@@ -136,13 +135,11 @@ class AcademicController extends Controller
         $user = Auth::user();
 
         try {
-            // Configure Midtrans (do this once)
             \Midtrans\Config::$serverKey = config('midtrans.serverKey');
-            \Midtrans\Config::$isProduction = false; // Set to true for Production Environment (accept real transaction).
+            \Midtrans\Config::$isProduction = false;
             \Midtrans\Config::$isSanitized = true;
             \Midtrans\Config::$is3ds = true;
 
-            // 1. Handle free courses immediately
             if ($course->price == 0) {
                 $student = Student::where('user_id', $user->id)->first();
                 if ($student && !$student->courses()->where('course_id', $course->id)->exists()) {
@@ -151,13 +148,13 @@ class AcademicController extends Controller
                 return response()->json([
                     'redirectUrl' => route('academics.show', [
                         'course' => $course->id,
-                        'lesson' => $course->modules[0]->lessons[0]->id // Make sure this path is valid
+                        // Safely access lesson ID with optional chaining
+                        'lesson' => $course->modules[0]->lessons[0]->id ?? null
                     ]),
                     'message' => 'You have successfully enrolled in this free course!',
                 ]);
             }
 
-            // 2. Check for existing payment
             $existingPayment = Payment::where([
                 'course_id' => $course->id,
                 'user_id' => $user->id,
@@ -167,20 +164,14 @@ class AcademicController extends Controller
 
             if ($existingPayment) {
                 if ($existingPayment->status == 'paid') {
-                    $course->load([
-                        'modules.lessons'
-                    ]);
-
-                    $lessonId = $course->modules[0]->lessons[0]->id;
-                    // If already paid, return redirect URL
+                    $course->load(['modules.lessons']);
+                    $lessonId = $course->modules[0]->lessons[0]->id ?? null; // Safely access lesson ID
                     return response()->json([
                         'redirectUrl' => "/academies/$course->id/tutorials/$lessonId",
                         'message' => 'You have already paid for this course. Enjoy!',
                     ]);
                 }
 
-                // If pending or expired, re-generate token for the existing payment_id
-                // Midtrans allows re-generation of snap token for same order_id
                 $params = [
                     'transaction_details' => [
                         'order_id' => $existingPayment->payment_id,
@@ -193,7 +184,6 @@ class AcademicController extends Controller
                 ];
                 $snapToken = \Midtrans\Snap::getSnapToken($params);
             } else {
-                // No existing payment, create a new one
                 $createPayment = Payment::create([
                     'payment_id' => Str::uuid(),
                     'user_id' => $user->id,
@@ -219,11 +209,9 @@ class AcademicController extends Controller
                 $snapToken = \Midtrans\Snap::getSnapToken($params);
             }
 
-            // Always return a JSON response with the snapToken
             return response()->json(['snapToken' => $snapToken]);
         } catch (\Exception $e) {
             Log::error('Midtrans payment processing failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            // Return an error JSON response
             return response()->json(['error' => 'Failed to process payment. Please try again or contact support.'], 500);
         }
     }
@@ -247,7 +235,6 @@ class AcademicController extends Controller
             }
         } catch (\Exception $e) {
             Log::error('Midtrans payment processing failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            // Return an error JSON response
             return response()->json(['error' => 'Failed to process payment. Please try again or contact support.'], 500);
         }
     }
@@ -262,30 +249,30 @@ class AcademicController extends Controller
         }
 
         try {
-            // Cek apakah pelajaran sudah ditandai selesai sebelumnya
+            DB::beginTransaction(); // Start a transaction for atomicity
+
             LessonCompletion::firstOrCreate(
                 [
                     'student_id' => $student->id,
                     'lesson_id' => $lesson->id,
                 ],
                 [
-                    'completed_at' => now(), // Tandai waktu penyelesaian
+                    'completed_at' => now(),
                 ]
             );
 
             $lesson->load(['module.course']);
-
-            // Setelah pelajaran ditandai selesai, Anda harus memicu update progress kursus
-            // (memanggil ProgressService yang sudah kita diskusikan sebelumnya)
-            // Anda perlu mendapatkan objek Course dari Lesson ini
             $course = $lesson->module->course;
-            (new ProgressService())->updateCourseProgress($student, $course);
 
+            // Update course progress after a lesson is completed
+            $this->progressService->updateCourseProgress($student, $course);
+
+            DB::commit(); // Commit the transaction
 
             return redirect()->back()->with('success', 'Lesson marked as complete!');
-        } catch (\Exception $e) {
-            // Tangani jika ada error (misalnya, constraint unique sudah ada)
-            Log::error("Failed to mark lesson {$lesson->id} complete for student {$student->id}: " . $e->getMessage());
+        } catch (Throwable $e) { // Use Throwable to catch all errors and exceptions
+            DB::rollBack(); // Rollback on error
+            Log::error("Failed to mark lesson {$lesson->id} complete for student {$student->id}: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return redirect()->back()->with('error', 'Failed to mark lesson as complete.');
         }
     }
@@ -299,44 +286,39 @@ class AcademicController extends Controller
         ]);
 
         $userId = Auth::id();
-        // Ambil objek Student lengkap, bukan hanya ID-nya
         $student = Student::where('user_id', $userId)->first();
         if (!$student) {
             return redirect()->route('login')->with('error', 'Please log in to submit quizzes.');
         }
 
-        // Ambil ID kuis pertama dari submissions
         $firstQuizId = $request->input('submissions.0.quiz_id');
-
-        // Temukan kuis pertama dan muat relasi lesson dan module.course
         $quiz = Quiz::with('lesson.module.course')->find($firstQuizId);
 
-        // Pastikan kuis, pelajaran, dan kursus ditemukan
         if (!$quiz || !$quiz->lesson || !$quiz->lesson->module || !$quiz->lesson->module->course) {
             return redirect()->back()->with('error', 'Invalid quiz submission: Associated lesson or course not found.');
         }
 
-        $lesson = $quiz->lesson; // Objek Lesson
-        $course = $lesson->module->course; // Objek Course
+        $lesson = $quiz->lesson;
+        $course = $lesson->module->course;
 
         try {
-            DB::beginTransaction(); // Mulai transaksi database
+            DB::beginTransaction();
 
             $submissionHistory = SubmissionHistory::create([
-                'lesson_id' => $lesson->id, // Gunakan ID dari objek Lesson
-                'student_id' => $student->id, // Gunakan ID dari objek Student
+                'lesson_id' => $lesson->id,
+                'student_id' => $student->id,
                 'status' => 'pending',
                 'grade' => null,
             ]);
 
             $correctAnswersCount = 0;
-            $totalQuizzesInSubmission = count($request->submissions); // Total kuis dalam submission ini
+            $totalQuizzesInSubmission = count($request->submissions);
 
             foreach ($request->submissions as $submissionData) {
                 $quizId = $submissionData['quiz_id'];
                 $selectedAnswer = $submissionData['selected_answer'];
 
-                $quiz = Quiz::find($quizId); // Ambil setiap kuis untuk validasi dan jawaban
+                $quiz = Quiz::find($quizId);
 
                 $isCorrect = false;
                 if ($quiz && $quiz->answer === $selectedAnswer) {
@@ -364,16 +346,14 @@ class AcademicController extends Controller
                 'grade' => $grade,
             ]);
 
-            // Panggil ProgressService untuk memperbarui kemajuan kursus
             $this->progressService->updateCourseProgress($student, $course);
 
-            DB::commit(); // Commit transaksi jika semua berhasil
+            DB::commit();
 
             return redirect()->back()->with('success', 'Quiz submitted successfully.');
-        } catch (\Exception $e) {
-            DB::rollBack(); // Rollback transaksi jika ada error
+        } catch (Throwable $e) { // Use Throwable
+            DB::rollBack();
             Log::error('Quiz submission failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-
             return redirect()->back()->with('error', 'Failed to submit quiz.');
         }
     }
@@ -386,58 +366,66 @@ class AcademicController extends Controller
             $student = Student::where('user_id', $user_id)->first();
 
             if (!$student) {
-                // If student not found (e.g., not logged in), redirect to login
                 return redirect()->route('login')->with('error', 'Please log in to complete the module.');
             }
 
-            // The module_id should refer to the module that was just completed
-            $completedModule = Module::find($module->id);
+            // Load lessons on the module being completed
+            $module->load(['course', 'lessons']);
 
-            if (!$completedModule) {
-                // If the module being marked complete doesn't exist
+            if (!$module) {
                 return redirect()->back()->with('error', 'The module you are trying to complete was not found.');
             }
 
-            // Get the course associated with the completed module
-            $course = $completedModule->course;
+            $course = $module->course;
 
-            // Find the next module in the course by order
+            DB::beginTransaction(); // Start transaction for module completion process
+
+            // 1. Ensure all lessons in the current module are marked as completed for the student
+            foreach ($module->lessons as $lesson) {
+                LessonCompletion::firstOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'lesson_id' => $lesson->id,
+                    ],
+                    [
+                        'completed_at' => now(),
+                    ]
+                );
+            }
+
+            // 2. Update the overall course progress.
+            // This is crucial because ProgressService calculates based on existing LessonCompletions.
+            $this->progressService->updateCourseProgress($student, $course);
+
+            DB::commit(); // Commit the transaction if all operations succeed
+
+            // Now, determine the next navigation
             $nextModule = Module::where('course_id', $course->id)
-                ->where('order', $completedModule->order + 1)
+                ->where('order', $module->order + 1)
                 ->first();
 
-            // Always update progress for the current course, regardless of whether there's a next module
-            (new ProgressService())->updateCourseProgress($student, $course);
-
             if ($nextModule) {
-                // Find the first lesson of the next module
                 $firstLessonOfNextModule = Lesson::where('module_id', $nextModule->id)
-                    ->where('order', 1) // Assuming lessons always start with order 1
+                    ->where('order', 1)
                     ->first();
 
                 if ($firstLessonOfNextModule) {
-                    // Redirect to the first lesson of the next module
                     return redirect()->to(
                         "/academies/{$course->id}/tutorials/{$firstLessonOfNextModule->id}"
                     )->with('success', 'Module completed successfully! Redirecting to the next module.');
                 } else {
-                    // Next module found, but it has no lessons
                     return redirect()->to("/academies/{$course->id}")->with('info', 'Module completed, but the next module has no lessons. You are back at the course overview.');
                 }
             } else {
-                // No next module found, meaning this was the last module in the course
                 return redirect()->to("/academies/{$course->id}")->with('success', 'Congratulations! You have completed the entire course.');
             }
-        } catch (\Exception $e) {
-            // Catch any unexpected errors that occur during the process
-            // Log the error for debugging purposes
-            Log::error("Error completing module: " . $e->getMessage(), [
-                'module_id' => $request->query('module'),
-                'user_id' => Auth::id(),
-                'exception' => $e
+        } catch (Throwable $e) { // Use Throwable to catch all types of errors
+            DB::rollBack(); // Rollback transaction on any error
+            Log::error("Error completing module '{$module->id}' for user '{$user_id}': " . $e->getMessage(), [
+                'module_id' => $module->id,
+                'user_id' => $user_id,
+                'exception' => $e->getTraceAsString() // Log full trace for better debugging
             ]);
-
-            // Redirect back with a generic error message
             return redirect()->back()->with('error', 'An unexpected error occurred while trying to complete the module. Please try again.');
         }
     }
