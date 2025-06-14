@@ -20,6 +20,7 @@ use App\Http\Resources\LessonResource;
 use App\Http\Resources\StudentResource;
 use App\Models\CourseEnrollment;
 use App\Models\LessonCompletion;
+use App\Models\Module;
 use Illuminate\Support\Facades\DB;
 
 class AcademicController extends Controller
@@ -77,7 +78,7 @@ class AcademicController extends Controller
 
         $lesson->load([
             'module.lessons',
-            'module.course',
+            'module.course.modules.lessons',
             'quizzes' => function ($query) {
                 $query->inRandomOrder()->limit(4);
             }
@@ -374,6 +375,70 @@ class AcademicController extends Controller
             Log::error('Quiz submission failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
             return redirect()->back()->with('error', 'Failed to submit quiz.');
+        }
+    }
+
+    public function markModuleCompleted(Request $request, Module $module)
+    {
+        try {
+            $user_id = Auth::id();
+
+            $student = Student::where('user_id', $user_id)->first();
+
+            if (!$student) {
+                // If student not found (e.g., not logged in), redirect to login
+                return redirect()->route('login')->with('error', 'Please log in to complete the module.');
+            }
+
+            // The module_id should refer to the module that was just completed
+            $completedModule = Module::find($module->id);
+
+            if (!$completedModule) {
+                // If the module being marked complete doesn't exist
+                return redirect()->back()->with('error', 'The module you are trying to complete was not found.');
+            }
+
+            // Get the course associated with the completed module
+            $course = $completedModule->course;
+
+            // Find the next module in the course by order
+            $nextModule = Module::where('course_id', $course->id)
+                ->where('order', $completedModule->order + 1)
+                ->first();
+
+            // Always update progress for the current course, regardless of whether there's a next module
+            (new ProgressService())->updateCourseProgress($student, $course);
+
+            if ($nextModule) {
+                // Find the first lesson of the next module
+                $firstLessonOfNextModule = Lesson::where('module_id', $nextModule->id)
+                    ->where('order', 1) // Assuming lessons always start with order 1
+                    ->first();
+
+                if ($firstLessonOfNextModule) {
+                    // Redirect to the first lesson of the next module
+                    return redirect()->to(
+                        "/academies/{$course->id}/tutorials/{$firstLessonOfNextModule->id}"
+                    )->with('success', 'Module completed successfully! Redirecting to the next module.');
+                } else {
+                    // Next module found, but it has no lessons
+                    return redirect()->to("/academies/{$course->id}")->with('info', 'Module completed, but the next module has no lessons. You are back at the course overview.');
+                }
+            } else {
+                // No next module found, meaning this was the last module in the course
+                return redirect()->to("/academies/{$course->id}")->with('success', 'Congratulations! You have completed the entire course.');
+            }
+        } catch (\Exception $e) {
+            // Catch any unexpected errors that occur during the process
+            // Log the error for debugging purposes
+            Log::error("Error completing module: " . $e->getMessage(), [
+                'module_id' => $request->query('module'),
+                'user_id' => Auth::id(),
+                'exception' => $e
+            ]);
+
+            // Redirect back with a generic error message
+            return redirect()->back()->with('error', 'An unexpected error occurred while trying to complete the module. Please try again.');
         }
     }
 }

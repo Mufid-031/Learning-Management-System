@@ -17,7 +17,7 @@ import {
   Trash2Icon,
   XIcon,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import UserAvatar from './forum-user-avatar';
 import InputError from './input-error';
 import BlockNoteMarkdownEditor from './markdown-editor-blocknote';
@@ -79,15 +79,6 @@ export default function DiscussionDetail({
   } = useForm({
     resolved: discussion?.resolved,
   });
-
-  // Effect to update form data if discussion prop changes
-  useEffect(() => {
-    if (discussion) {
-      setDiscussionEditData('content', discussion.content);
-      setData('discussion_thread_id', discussion.id);
-      setResolvedData('resolved', discussion.resolved);
-    }
-  }, [discussion, setDiscussionEditData, setData, setResolvedData]);
 
   const handleSubmitReply = (e: React.FormEvent) => {
     e.preventDefault();

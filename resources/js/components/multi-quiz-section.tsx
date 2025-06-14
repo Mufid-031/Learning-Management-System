@@ -27,12 +27,12 @@ interface QuizProgress {
 
 interface MultipleQuizSectionProps {
   quizzes: Quiz[];
-  handleMarkComplete: () => void;
+  handleNextModule: () => void;
 }
 
 export default function MultipleQuizSection({
   quizzes,
-  handleMarkComplete,
+  handleNextModule,
 }: MultipleQuizSectionProps) {
   const { student, lesson } = usePage<
     SharedData & {
@@ -408,7 +408,7 @@ export default function MultipleQuizSection({
                 (submissionHistory) =>
                   parseFloat(submissionHistory.grade?.toString() ?? '0') >= 70,
               ) && (
-                <Button onClick={handleMarkComplete} className="cursor-pointer">
+                <Button onClick={handleNextModule} className="cursor-pointer">
                   Next Module
                 </Button>
               )}

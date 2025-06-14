@@ -30,10 +30,6 @@ const tabTriggers = [
     value: 'testimoni',
     label: 'Testimoni',
   },
-  {
-    value: 'faq',
-    label: 'FAQ',
-  },
 ];
 
 export function CourseDetail({

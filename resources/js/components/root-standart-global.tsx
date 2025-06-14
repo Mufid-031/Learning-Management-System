@@ -43,14 +43,14 @@ export function RootStandartGlobal() {
 
   return (
     <RootContent>
-      <section className="lg:bg-muted mx-10 mb-10 grid grid-cols-1 overflow-hidden rounded-xl lg:h-96 lg:grid-cols-2">
-        <div className="m-5 px-5 pt-7 lg:px-10">
-          <h2 className="mb-5 text-2xl font-bold lg:text-3xl">
+      <section className="md:bg-muted mx-4 mb-10 grid grid-cols-1 overflow-hidden rounded-xl md:h-96 md:grid-cols-2">
+        <div className="m-5 px-5 pt-7 md:px-10">
+          <h2 className="mb-5 text-2xl font-bold md:text-3xl">
             <BlurFade direction="up" duration={0.7} inView>
               Belajar dengan kelas standar industri global
             </BlurFade>
           </h2>
-          <p className="text-muted-foreground lg:text-md mb-5 text-sm">
+          <p className="text-muted-foreground md:text-md mb-5 text-sm">
             <BlurFade
               direction="right"
               duration={0.7}
@@ -78,7 +78,7 @@ export function RootStandartGlobal() {
         </div>
         <div
           className={cn(
-            'relative flex h-full w-full items-center justify-center lg:overflow-hidden',
+            'relative flex h-full w-full items-center justify-center md:overflow-hidden',
             isMobile ? 'flex-col' : 'flex-row',
           )}
         >
@@ -132,7 +132,7 @@ const ReviewCard = ({ course }: { course: Course }) => {
   return (
     <figure
       className={cn(
-        'relative h-full w-64 cursor-pointer overflow-hidden rounded-xl border sm:w-36 lg:w-fit',
+        'relative h-full w-64 cursor-pointer overflow-hidden rounded-xl border sm:w-36 md:w-fit',
         // light styles
         'border-gray-950/[.1] bg-gray-950/[.01] hover:bg-gray-950/[.05]',
         // dark styles

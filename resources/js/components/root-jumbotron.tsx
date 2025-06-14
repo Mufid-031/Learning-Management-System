@@ -12,14 +12,14 @@ export function RootJumbotron() {
       <section className="mb-20 flex flex-col gap-0 pt-32 md:flex-row md:items-center md:justify-center md:gap-4">
         <div className="order-2 p-10 py-0 md:order-1 md:w-1/2 md:py-20">
           <div className="mb-5">
-            <h2 className="mb-4 text-2xl font-semibold md:text-4xl">
+            <h2 className="mb-4 text-3xl font-semibold md:text-4xl">
               <BlurFade direction="up" offset={20} duration={0.7} inView>
                 Bangun Karirmu Sebagai
               </BlurFade>
             </h2>
-            <h2 className="text-2xl font-semibold md:text-5xl">
+            <h2 className="text-4xl font-semibold md:text-5xl">
               <BlurFade
-                className="flex items-center gap-3"
+                className="flex items-center gap-3 text-wrap"
                 direction="right"
                 offset={20}
                 duration={0.7}

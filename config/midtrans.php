@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'merchantId' => 'G421941649',
-    'clientId' => 'SB-Mid-client-FqBF6xeyV8hKmJOo',
-    'serverKey' => 'SB-Mid-server-K14uOL_4WhwQlYJfM3m08KoI',
+    'merchantId' => 'G190407170',
+    'clientId' => 'SB-Mid-client-pYjyATgB291PcHtf',
+    'serverKey' => 'SB-Mid-server-BtfOzX1_ngoHjZbF7QEX0rT7',
 ];

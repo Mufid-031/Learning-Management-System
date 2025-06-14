@@ -69,6 +69,8 @@ Route::controller(AcademicController::class)->group(function () {
         ->name('academics.confirm-payment');
     Route::post('/lessons/{lesson}/complete', [AcademicController::class, 'markLessonCompleted'])
         ->name('lessons.complete');
+    Route::post('/module/complete/{module}', [AcademicController::class, 'markModuleCompleted'])
+        ->name('modules.complete');
 });
 
 Route::controller(RatingController::class)->group(function () {

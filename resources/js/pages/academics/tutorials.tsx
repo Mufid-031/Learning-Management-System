@@ -21,6 +21,7 @@ export default function Tutorials() {
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [allQuizzesPassed, setAllQuizzesPassed] = useState(false);
   const { post: markCompletePost } = useForm({});
+  const { post: markModuleCompletePost } = useForm({});
 
   //   console.log(student);
 
@@ -35,6 +36,18 @@ export default function Tutorials() {
       onError: (errors) => {
         console.log(errors);
         toast.error('Failed to mark lesson as complete');
+      },
+    });
+  };
+
+  const handleNextModule = () => {
+    markModuleCompletePost(`/module/complete/${lesson.data.module.id}`, {
+      onSuccess: () => {
+        toast.success('Module completed successfully!');
+      },
+      onError: (errors) => {
+        console.log(errors);
+        toast.error('Failed to mark module as complete');
       },
     });
   };
@@ -113,7 +126,7 @@ export default function Tutorials() {
           {hasQuizzes && (
             <MultipleQuizSection
               quizzes={activeLesson.quizzes}
-              handleMarkComplete={handleMarkComplete}
+              handleNextModule={handleNextModule}
             />
           )}
 

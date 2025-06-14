@@ -1,7 +1,7 @@
 import { useInitials } from '@/hooks/use-initials';
 import { Rating, SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { ArrowRight, ArrowUpRightFromSquare } from 'lucide-react';
+import { ArrowUpRightFromSquare, StarIcon } from 'lucide-react';
 import { RootContent } from './root-content';
 import { Carousel } from './ui/apple-cards-carousel';
 import { Button } from './ui/button';
@@ -46,8 +46,9 @@ function TestimoniCard({ rating }: { rating: Rating }) {
   return (
     <Card className="h-full w-md lg:w-5xl">
       <div className="grid grid-cols-1 lg:grid-cols-2">
-        <div className="order-2 p-10 lg:order-1">
+        <div className="order-2 flex flex-col justify-between p-10 lg:order-1">
           <p className="text-md text-muted-foreground mb-7">{rating.comment}</p>
+          <Separator className="text-muted-foreground mb-5 w-full" />
           <div className="mb-5 flex flex-col gap-3">
             <p className="text-muted-foreground text-sm">
               {rating.student.user.name}
@@ -55,13 +56,15 @@ function TestimoniCard({ rating }: { rating: Rating }) {
             <p className="text-muted-foreground text-sm">
               {rating.course.title}
             </p>
-          </div>
-          <Separator className="text-muted-foreground mb-5 w-full" />
-          <div className="order-1 flex w-full items-center justify-end lg:order-2">
-            <Button variant="link" className="group cursor-pointer">
-              Baca kisahnya
-              <ArrowRight className="transition-all duration-100 group-hover:translate-x-1" />
-            </Button>
+            <div className="flex items-center gap-4">
+              {Array.from({ length: 5 }, (_, k) => (
+                <StarIcon
+                  key={k}
+                  className="h-4 w-4 text-amber-400"
+                  fill={k < rating.rating ? 'currentColor' : 'none'}
+                />
+              ))}
+            </div>
           </div>
         </div>
         <div className="bg-muted mx-5 h-96">

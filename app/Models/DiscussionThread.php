@@ -21,6 +21,10 @@ class DiscussionThread extends Model
         'user_id',
     ];
 
+    protected $casts = [
+        'resolved' => 'boolean',
+    ];
+
     public function replies(): HasMany
     {
         return $this->hasMany(Reply::class);
